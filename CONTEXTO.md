@@ -1,8 +1,9 @@
 # CLAUDE.md — Proyecto "Cazador de Monedas" (Unity 6, 2D)
 
-> Archivo de contexto para Claude Code. Objetivo: construir **exactamente** el juego
-> descrito en la guía "Mi primer videojuego 2D en Unity", trabajando 100 % dentro de Unity
-> (sin motores ni librerías externas). Léelo completo antes de tocar nada.
+> Archivo de contexto para Claude Code. Objetivo: construir el juego descrito en la guía
+> "Mi primer videojuego 2D en Unity" **más las mejoras pedidas por el usuario** (menú principal,
+> pausa y pantalla de fin), trabajando 100 % dentro de Unity (sin motores ni librerías externas).
+> Léelo completo antes de tocar nada.
 
 ---
 
@@ -11,12 +12,24 @@
 **Cazador de monedas**: el jugador (cuadrado azul) se mueve con **flechas o WASD** dentro de un
 recinto cerrado por cuatro paredes grises, recoge **5 monedas amarillas** y gana.
 
-- Fondo oscuro (azul marino), cámara ortográfica fija.
-- HUD arriba a la izquierda: `Monedas: X / 5`.
-- Al recoger la 5.ª moneda: aparece `¡Ganaste! Recogiste todas las monedas.` bajo el contador y el jugador **se detiene y ya no responde al teclado**.
-- No hay reinicio dentro del juego: al detener y volver a pulsar Play, la escena guardada reaparece con las 5 monedas.
+Flujo de pantallas:
 
-Visual esperado (Game view, 16:9):
+```
+Menu ──Jugar──▶ Nivel1 ──Esc──▶ Pausa ──Continuar / Esc──▶ Nivel1
+  ▲               │               ├─Reiniciar──▶ Nivel1 (desde 0)
+  │               │               └─Menú principal──▶ Menu
+  │               └─5 monedas──▶ Fin ──Reiniciar──▶ Nivel1 (desde 0)
+  └──────────────────────────────────┴─Menú principal
+Menu ──Salir──▶ cierra el juego (en el editor detiene Play)
+```
+
+- Fondo oscuro (azul marino), cámara ortográfica fija (igual en ambas escenas).
+- HUD arriba a la izquierda: `Monedas: X / 5`.
+- Al recoger la 5.ª moneda: aparece `¡Ganaste! Recogiste todas las monedas.` bajo el contador,
+  el jugador **se detiene y ya no responde al teclado**, y se muestra el **panel de fin**.
+- **Esc** pausa/reanuda la partida (no funciona después de ganar).
+
+Visual esperado de `Nivel1` (Game view, 16:9):
 
 ```
 Monedas: 0 / 5
@@ -35,40 +48,39 @@ Monedas: 0 / 5
 
 | Elemento | Valor |
 |---|---|
-| Editor | **Unity 6 LTS** (6000.x). Mantener el mismo editor todo el proyecto. |
-| Plantilla | **2D (Built-In Render Pipeline)**. Si solo existe Universal 2D, también sirve. |
+| Editor | **Unity 6** (proyecto en **6000.4.8f1**). Mantener el mismo editor todo el proyecto. |
+| Plantilla | **Universal 2D (URP)** (la que tiene el proyecto). |
 | Nombre del proyecto | `CazadorMonedas` |
 | Lenguaje | C# |
-| Entrada | **Input Manager clásico** (`Input.GetAxisRaw`) |
+| Entrada | **Input Manager clásico** (`Input.GetAxisRaw`, `Input.GetKeyDown`) |
 | Física | Física 2D (`Rigidbody2D`, `BoxCollider2D`, `CircleCollider2D`) |
+| Interfaz | **UGUI** (`com.unity.ugui`, ya incluido): Canvas + `Text` (legacy) + `Button` |
 
 **Reglas de versión (críticas):**
 - Unity 6 usa `Rigidbody2D.linearVelocity` y `linearDamping`. **No** usar `velocity` / `drag` (son de Unity 2022/2023).
 - Usar siempre componentes **2D**, nunca `Rigidbody` / `BoxCollider` 3D.
 - Decimales con punto (`0.7`), nunca coma, en código y datos.
-
-> Si el proyecto aún no existe: el usuario lo crea en Unity Hub (plantilla 2D, nombre `CazadorMonedas`)
-> y abre a Claude Code en la carpeta raíz del proyecto (donde están `Assets/`, `Packages/`, `ProjectSettings/`).
-> Crear el proyecto por línea de comandos (`-createProject`) genera uno 3D, por eso no se recomienda.
+- Texto con `UnityEngine.UI.Text` y la fuente integrada `LegacyRuntime.ttf`. **No** TextMeshPro
+  (requeriría importar recursos extra).
 
 ---
 
 ## 3. Cómo debe trabajar Claude Code (estrategia)
 
-Claude Code **no puede hacer clic en la interfaz de Unity**, así que la guía (que es paso a paso con el ratón)
-se traduce en **archivos que generan todo por código**:
+Claude Code **no puede hacer clic en la interfaz de Unity**, así que todo se genera por código:
 
-1. Escribir `Assets/Scripts/CazadorMonedas.cs` (script de juego, sección 6).
-2. Escribir `Assets/Editor/ConstruirCazadorMonedas.cs` (script de editor que **construye la escena completa**, sección 7).
+1. Scripts de juego en `Assets/Scripts/` (sección 6).
+2. Script de editor `Assets/Editor/ConstruirCazadorMonedas.cs` que **construye las dos escenas** (sección 7).
 3. Ejecutar el constructor (menú **Herramientas → Construir Cazador de Monedas**, o por línea de comandos, sección 8).
 4. Validar con el método `Validar` y la lista de la sección 9.
 
 Reglas generales:
 - No inventar mecánicas, arte, sonido ni UI extra. Alcance = lo descrito aquí.
-- No añadir paquetes. Todo con lo que trae la plantilla 2D.
-- No cambiar valores numéricos de las tablas. Son los de la guía.
-- Cambios con **Play apagado**.
-- Después de escribir scripts, esperar a que Unity compile y revisar que la consola no tenga errores rojos.
+- No añadir paquetes. Todo con lo que trae la plantilla.
+- No cambiar valores numéricos de las tablas.
+- Cambios con **Play apagado**. Para línea de comandos, Unity debe estar **cerrado**.
+- Después de escribir scripts, revisar que la compilación no tenga errores.
+- Consultar al usuario antes de instalar algo, cambiar ajustes del proyecto o hacer commits.
 
 ---
 
@@ -78,60 +90,56 @@ Reglas generales:
 CazadorMonedas/
 ├─ Assets/
 │  ├─ Escenas/
-│  │  └─ Nivel1.unity              ← escena única (en Build Settings)
+│  │  ├─ Menu.unity                ← escena 0 en Build Settings (inicio)
+│  │  └─ Nivel1.unity              ← escena 1 en Build Settings
 │  ├─ Scripts/
-│  │  └─ CazadorMonedas.cs         ← solo se adjunta a Jugador
+│  │  ├─ CazadorMonedas.cs         ← en Jugador (movimiento, monedas, HUD)
+│  │  ├─ ControlPartida.cs         ← en Partida (pausa, fin, reiniciar, ir al menú)
+│  │  └─ MenuPrincipal.cs          ← en Menu (Jugar, Salir)
 │  ├─ Editor/
-│  │  └─ ConstruirCazadorMonedas.cs ← herramienta de generación (extra, opcional conservarla)
-│  └─ Sprites/
-│     ├─ Cuadrado.png              ← 64×64 blanco, PPU 64 (= 1 unidad)
-│     └─ Circulo.png               ← 64×64 blanco circular, PPU 64 (= 1 unidad de diámetro)
+│  │  └─ ConstruirCazadorMonedas.cs ← genera sprites, tag, ajustes y ambas escenas
+│  ├─ Sprites/
+│  │  ├─ Cuadrado.png              ← 64×64 blanco, PPU 64 (= 1 unidad)
+│  │  └─ Circulo.png               ← 64×64 blanco circular, PPU 64 (= 1 unidad de diámetro)
+│  └─ Scenes/SampleScene.unity     ← de la plantilla; no se usa (fuera de Build Settings)
 ├─ ProjectSettings/                ← Active Input Handling = Both; tag "Moneda"
 └─ Packages/
 ```
 
-Las carpetas `Escenas` y `Scripts` son las de la guía. `Editor` y `Sprites` son necesarias solo porque
-se genera todo por código (equivalen a los sprites integrados *Square* y *Circle* del menú 2D Object).
-
 ---
 
-## 5. Especificación de la escena `Nivel1`
+## 5. Especificación de escenas
 
 ### 5.1 Ajustes de proyecto
-- **Edit → Project Settings → Player → Other Settings → Configuration → Active Input Handling = `Both`**
-  (valor `2` en `ProjectSettings.asset` → `activeInputHandler: 2`). Si no existe, `Input Manager (Old)` (`0`).
-  Si se deja solo "Input System Package (New)" el script lanza error al leer el teclado.
-  Cambiarlo puede requerir **reiniciar el editor**.
-- **Tag** nuevo: `Moneda` (M mayúscula).
+- **Active Input Handling = `Both`** (`activeInputHandler: 2` en `ProjectSettings.asset`).
+  Con "Input System Package (New)" solo, `Input.GetAxisRaw` y `StandaloneInputModule` lanzan error.
+- **Tag** `Moneda` (M mayúscula).
+- **Build Settings**: `Assets/Escenas/Menu.unity` (0), `Assets/Escenas/Nivel1.unity` (1).
 
-### 5.2 Main Camera
+### 5.2 Main Camera (en Menu y en Nivel1)
 
 | Propiedad | Valor |
 |---|---|
 | Position | (0, 0, -10) |
 | Rotation | (0, 0, 0) |
-| Projection | **Orthographic** |
-| Size | **5** |
+| Projection | **Orthographic**, Size **5** |
 | Clear Flags / Background Type | Solid Color |
 | Background | azul marino oscuro (≈ `#142140`, RGB 0.08, 0.13, 0.25) |
-| Aspecto del Game view | 16:9 (ajuste del editor, no del archivo) |
 
-### 5.3 Jugador (cuadrado azul)
+### 5.3 Jugador (cuadrado azul) — Nivel1
 
 | Propiedad | Valor |
 |---|---|
 | Nombre | `Jugador` |
 | Sprite | Cuadrado (1×1 unidad) |
 | Position / Rotation / Scale | (0, 0, 0) / (0, 0, 0) / **(0.7, 0.7, 1)** |
-| Sprite Renderer → Color | azul (≈ `#0080FF`) |
-| Order in Layer | 0 |
-| **Rigidbody 2D** | Body Type **Dynamic**, Simulated ✔, **Gravity Scale 0**, **Linear Damping 0**, Constraints → **Freeze Rotation Z ✔** |
+| Sprite Renderer → Color | azul (≈ `#0080FF`), Order in Layer 0 |
+| **Rigidbody 2D** | Dynamic, Simulated ✔, **Gravity Scale 0**, **Linear Damping 0**, **Freeze Rotation Z ✔** |
 | **Box Collider 2D** | **Is Trigger desactivado**, Size/Offset por defecto (1×1 / 0,0) |
-| Script | `CazadorMonedas` (Velocidad = 4, Meta = 5) — **solo aquí** |
+| Script `CazadorMonedas` | Velocidad = 4, Meta = 5, Texto Contador, Texto Victoria y Partida asignados |
 
-### 5.4 Paredes (4 objetos, color gris, sin Rigidbody 2D)
+### 5.4 Paredes (4 objetos, gris ≈ `#8C94A6`, Box Collider 2D sólido, sin Rigidbody 2D) — Nivel1
 
-Cada una: Sprite Cuadrado gris (≈ `#8C94A6`), **Box Collider 2D con Is Trigger desactivado**, Rotation (0,0,0).
 La dimensión se logra con **Scale**, **no** cambiando el Size del collider.
 
 | Objeto | Position (X, Y, Z) | Scale (X, Y, Z) |
@@ -141,35 +149,64 @@ La dimensión se logra con **Scale**, **no** cambiando el Size del collider.
 | ParedIzquierda | -7, 0, 0 | 0.4, 8, 1 |
 | ParedDerecha | 7, 0, 0 | 0.4, 8, 1 |
 
-### 5.5 Monedas (5 objetos, círculo amarillo)
+### 5.5 Monedas (5 objetos, círculo amarillo ≈ `#FFD933`) — Nivel1
 
-Cada una: Sprite Circulo amarillo (≈ `#FFD933`), Rotation (0,0,0), **Scale (0.45, 0.45, 1)**,
-**Circle Collider 2D con Is Trigger ACTIVADO**, **Tag = `Moneda`**, **sin Rigidbody 2D**
-(el del Jugador permite detectar el contacto).
+Cada una: **Scale (0.45, 0.45, 1)**, **Circle Collider 2D con Is Trigger ACTIVADO**, **Tag = `Moneda`**, **sin Rigidbody 2D**.
 
-| Objeto | Position (X, Y, Z) | Tag |
-|---|---|---|
-| Moneda1 | -4, 2, 0 | Moneda |
-| Moneda2 | 0, 2, 0 | Moneda |
-| Moneda3 | 4, 2, 0 | Moneda |
-| Moneda4 | -3, -2, 0 | Moneda |
-| Moneda5 | 3, -2, 0 | Moneda |
+| Objeto | Position (X, Y, Z) |
+|---|---|
+| Moneda1 | -4, 2, 0 |
+| Moneda2 | 0, 2, 0 |
+| Moneda3 | 4, 2, 0 |
+| Moneda4 | -3, -2, 0 |
+| Moneda5 | 3, -2, 0 |
 
 > Pared = collider sólido (bloquea). Moneda = trigger (detecta sin bloquear).
 
+### 5.6 Interfaz de Nivel1
+
+`Canvas` (Screen Space - Overlay, Canvas Scaler **Constant Pixel Size**) + `EventSystem` con
+`StandaloneInputModule`. Objeto vacío `Partida` con `ControlPartida` (Panel Pausa y Panel Fin asignados).
+Todo el texto es blanco, fuente `LegacyRuntime.ttf`.
+
+| Elemento | Ancla | Posición / Tamaño | Contenido |
+|---|---|---|---|
+| TextoContador | arriba-izq. | (20, -20) / 420×40, fuente 24 | `Monedas: X / 5` |
+| TextoVictoria | arriba-izq. | (20, -65) / 500×40, fuente 24, **inactivo al inicio** | `¡Ganaste! Recogiste todas las monedas.` |
+| PanelPausa | pantalla completa | negro alfa 0.6, **inactivo al inicio** | Título `Pausa` (48) en (0,120); botones **Continuar** (0,30), **Reiniciar** (0,-40), **Menú principal** (0,-110) |
+| PanelFin | centro | 420×260, azul oscuro alfa 0.92, **inactivo al inicio** | Título `Fin de la partida` (32) en (0,75); botones **Reiniciar** (0,-5), **Menú principal** (0,-75) |
+
+Botones: 260×50, color azul (≈ `#0080FF`), texto 24 centrado.
+
+### 5.7 Escena Menu
+
+Main Camera (5.2), Canvas + EventSystem (igual que 5.6), objeto `Menu` con `MenuPrincipal`.
+
+| Elemento | Posición / Tamaño | Contenido / Acción |
+|---|---|---|
+| Titulo | (0, 120) / 800×90, fuente 56 | `Cazador de Monedas` |
+| BotonJugar | (0, 0) / 260×50 | `Jugar` → `MenuPrincipal.Jugar` (carga Nivel1) |
+| BotonSalir | (0, -70) / 260×50 | `Salir` → `MenuPrincipal.Salir` |
+
 ---
 
-## 6. Script de juego — `Assets/Scripts/CazadorMonedas.cs`
+## 6. Scripts de juego — `Assets/Scripts/`
 
-Archivo y clase **deben llamarse igual** (`CazadorMonedas`). Copiar tal cual (UTF-8, para que `¡` se vea bien).
+Archivo y clase **deben llamarse igual**. Guardar en UTF-8 (para `¡` y `ú`).
+
+### 6.1 `CazadorMonedas.cs` (en Jugador)
 
 ```csharp
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CazadorMonedas : MonoBehaviour
 {
     public float velocidad = 4f;
     public int meta = 5;
+    public Text textoContador;
+    public Text textoVictoria;
+    public ControlPartida partida;
     private Rigidbody2D cuerpo;
     private Vector2 direccion;
     private int puntos = 0;
@@ -178,6 +215,9 @@ public class CazadorMonedas : MonoBehaviour
     void Start()
     {
         cuerpo = GetComponent<Rigidbody2D>();
+        if (textoVictoria != null)
+            textoVictoria.gameObject.SetActive(false);
+        ActualizarContador();
     }
 
     void Update()
@@ -202,23 +242,117 @@ public class CazadorMonedas : MonoBehaviour
         otro.enabled = false;
         Destroy(otro.gameObject);
         puntos++;
+        ActualizarContador();
         if (puntos >= meta)
         {
             gano = true;
             cuerpo.linearVelocity = Vector2.zero;
+            if (textoVictoria != null)
+                textoVictoria.gameObject.SetActive(true);
+            if (partida != null)
+                partida.MostrarFin();
         }
     }
 
-    void OnGUI()
+    void ActualizarContador()
     {
-        GUIStyle estilo = new GUIStyle(GUI.skin.label);
-        estilo.fontSize = 24;
-        estilo.normal.textColor = Color.white;
-        GUI.Label(new Rect(20, 20, 420, 40),
-            "Monedas: " + puntos + " / " + meta, estilo);
-        if (gano)
-            GUI.Label(new Rect(20, 65, 500, 40),
-                "¡Ganaste! Recogiste todas las monedas.", estilo);
+        if (textoContador != null)
+            textoContador.text = "Monedas: " + puntos + " / " + meta;
+    }
+}
+```
+
+### 6.2 `ControlPartida.cs` (en Partida)
+
+```csharp
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class ControlPartida : MonoBehaviour
+{
+    public GameObject panelPausa;
+    public GameObject panelFin;
+    public string escenaMenu = "Menu";
+    private bool pausado = false;
+    private bool terminado = false;
+
+    void Start()
+    {
+        Time.timeScale = 1f;
+        panelPausa.SetActive(false);
+        panelFin.SetActive(false);
+    }
+
+    void Update()
+    {
+        // Esc pausa y reanuda; tras ganar ya no se puede pausar.
+        if (!terminado && Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (pausado)
+                Continuar();
+            else
+                Pausar();
+        }
+    }
+
+    public void Pausar()
+    {
+        pausado = true;
+        Time.timeScale = 0f;
+        panelPausa.SetActive(true);
+    }
+
+    public void Continuar()
+    {
+        pausado = false;
+        Time.timeScale = 1f;
+        panelPausa.SetActive(false);
+    }
+
+    public void MostrarFin()
+    {
+        terminado = true;
+        panelFin.SetActive(true);
+    }
+
+    public void Reiniciar()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void IrAlMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(escenaMenu);
+    }
+}
+```
+
+### 6.3 `MenuPrincipal.cs` (en Menu)
+
+```csharp
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class MenuPrincipal : MonoBehaviour
+{
+    public string escenaJuego = "Nivel1";
+
+    public void Jugar()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(escenaJuego);
+    }
+
+    public void Salir()
+    {
+#if UNITY_EDITOR
+        // En el editor, detiene Play.
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 }
 ```
@@ -226,288 +360,71 @@ public class CazadorMonedas : MonoBehaviour
 Notas de diseño (no cambiar):
 - `normalized` evita ir más rápido en diagonal.
 - `Update` lee teclado; `FixedUpdate` aplica velocidad al cuerpo físico.
-- `OnGUI` (IMGUI) es intencional para este prototipo: **no** usar Canvas/TextMeshPro.
+- La pausa usa `Time.timeScale = 0` (congela la física). Toda salida de la pausa o cambio de escena
+  restablece `Time.timeScale = 1`.
 - `Velocidad` y `Meta` son campos públicos: el valor que manda es el del **Inspector**, no el del código.
+- Los botones se conectan con listeners **persistentes** (visibles en el `On Click ()` del Inspector).
 
 ---
 
-## 7. Constructor de escena — `Assets/Editor/ConstruirCazadorMonedas.cs`
+## 7. Constructor de escenas — `Assets/Editor/ConstruirCazadorMonedas.cs`
 
-Genera sprites, tag, ajustes, escena `Nivel1` completa y la añade a Build Settings.
-Es **idempotente**: se puede ejecutar varias veces (regenera la escena).
+El archivo del repositorio es la **fuente de verdad** (no se duplica aquí). Es **idempotente**: se puede
+ejecutar varias veces y regenera ambas escenas. Hace, en orden:
 
-```csharp
-#if UNITY_EDITOR
-using System.IO;
-using UnityEditor;
-using UnityEditor.SceneManagement;
-using UnityEngine;
+1. `ConfigurarProyecto`: modo 2D, Active Input Handling 1 → 2 si hace falta, tag `Moneda`.
+2. `CrearCarpetas`: `Escenas`, `Scripts`, `Sprites`, `Editor`.
+3. `CrearSprite`: `Cuadrado.png` y `Circulo.png` (64×64, PPU 64).
+4. `CrearEscena`: `Nivel1` con cámara, jugador, paredes, monedas e interfaz (5.2–5.6).
+5. `CrearEscenaMenu`: `Menu` (5.7).
+6. Build Settings = `Menu`, `Nivel1`.
 
-public static class ConstruirCazadorMonedas
-{
-    const string CarpetaSprites = "Assets/Sprites";
-    const string RutaEscena = "Assets/Escenas/Nivel1.unity";
-
-    [MenuItem("Herramientas/Construir Cazador de Monedas")]
-    public static void Construir()
-    {
-        ConfigurarProyecto();
-        CrearCarpetas();
-        Sprite cuadrado = CrearSprite("Cuadrado", false);
-        Sprite circulo = CrearSprite("Circulo", true);
-        CrearEscena(cuadrado, circulo);
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-        Debug.Log("[CazadorMonedas] Escena construida en " + RutaEscena);
-    }
-
-    // ---------- Proyecto ----------
-    static void ConfigurarProyecto()
-    {
-        EditorSettings.defaultBehaviorMode = EditorBehaviorMode.Mode2D;
-
-        // Active Input Handling = Both (2)
-        var ps = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
-        if (ps != null && ps.Length > 0)
-        {
-            var so = new SerializedObject(ps[0]);
-            var p = so.FindProperty("activeInputHandler");
-            if (p != null && p.intValue == 1) // 1 = solo Input System nuevo
-            {
-                p.intValue = 2;
-                so.ApplyModifiedPropertiesWithoutUndo();
-                Debug.LogWarning("[CazadorMonedas] Active Input Handling cambiado a Both. " +
-                                 "Reinicia el editor si Unity lo solicita.");
-            }
-        }
-        AsegurarTag("Moneda");
-    }
-
-    static void AsegurarTag(string tag)
-    {
-        var assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
-        var tm = new SerializedObject(assets[0]);
-        var tags = tm.FindProperty("tags");
-        for (int i = 0; i < tags.arraySize; i++)
-            if (tags.GetArrayElementAtIndex(i).stringValue == tag) return;
-        tags.InsertArrayElementAtIndex(tags.arraySize);
-        tags.GetArrayElementAtIndex(tags.arraySize - 1).stringValue = tag;
-        tm.ApplyModifiedPropertiesWithoutUndo();
-    }
-
-    static void CrearCarpetas()
-    {
-        foreach (var c in new[] { "Assets/Escenas", "Assets/Scripts", "Assets/Sprites", "Assets/Editor" })
-            if (!AssetDatabase.IsValidFolder(c))
-                AssetDatabase.CreateFolder("Assets", Path.GetFileName(c));
-    }
-
-    // ---------- Sprites (equivalen a Square y Circle de 2D Object) ----------
-    static Sprite CrearSprite(string nombre, bool circulo)
-    {
-        string ruta = CarpetaSprites + "/" + nombre + ".png";
-        if (!File.Exists(ruta))
-        {
-            const int n = 64;
-            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
-            float r = n / 2f;
-            for (int y = 0; y < n; y++)
-                for (int x = 0; x < n; x++)
-                {
-                    float dx = x + 0.5f - r, dy = y + 0.5f - r;
-                    bool dentro = !circulo || (dx * dx + dy * dy <= r * r);
-                    tex.SetPixel(x, y, dentro ? Color.white : new Color(1, 1, 1, 0));
-                }
-            tex.Apply();
-            File.WriteAllBytes(ruta, tex.EncodeToPNG());
-            Object.DestroyImmediate(tex);
-            AssetDatabase.ImportAsset(ruta, ImportAssetOptions.ForceSynchronousImport);
-        }
-        var imp = (TextureImporter)AssetImporter.GetAtPath(ruta);
-        imp.textureType = TextureImporterType.Sprite;
-        imp.spriteImportMode = SpriteImportMode.Single;
-        imp.spritePixelsPerUnit = 64;   // 64 px = 1 unidad → sprite de 1×1
-        imp.alphaIsTransparency = true;
-        imp.mipmapEnabled = false;
-        imp.SaveAndReimport();
-        return AssetDatabase.LoadAssetAtPath<Sprite>(ruta);
-    }
-
-    // ---------- Escena ----------
-    static void CrearEscena(Sprite cuadrado, Sprite circulo)
-    {
-        var escena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-
-        // Cámara
-        var camGO = new GameObject("Main Camera");
-        camGO.tag = "MainCamera";
-        var cam = camGO.AddComponent<Camera>();
-        camGO.AddComponent<AudioListener>();
-        camGO.transform.position = new Vector3(0, 0, -10);
-        cam.orthographic = true;
-        cam.orthographicSize = 5f;
-        cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = new Color(0.08f, 0.13f, 0.25f);
-
-        var azul = new Color(0f, 0.5f, 1f);
-        var gris = new Color(0.55f, 0.58f, 0.65f);
-        var amarillo = new Color(1f, 0.85f, 0.2f);
-
-        // Jugador
-        var jugador = CrearSpriteObj("Jugador", cuadrado, new Vector3(0, 0, 0), new Vector3(0.7f, 0.7f, 1f), azul);
-        var rb = jugador.AddComponent<Rigidbody2D>();
-        rb.bodyType = RigidbodyType2D.Dynamic;
-        rb.simulated = true;
-        rb.gravityScale = 0f;
-        rb.linearDamping = 0f;
-        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
-        var bcJ = jugador.AddComponent<BoxCollider2D>();
-        bcJ.size = Vector2.one;
-        bcJ.isTrigger = false;
-        jugador.AddComponent<CazadorMonedas>(); // Velocidad = 4, Meta = 5 (valores por defecto)
-
-        // Paredes (tamaño por Scale, collider 1×1)
-        CrearPared("ParedSuperior", cuadrado, gris, new Vector3(0, 4, 0), new Vector3(14f, 0.4f, 1f));
-        CrearPared("ParedInferior", cuadrado, gris, new Vector3(0, -4, 0), new Vector3(14f, 0.4f, 1f));
-        CrearPared("ParedIzquierda", cuadrado, gris, new Vector3(-7, 0, 0), new Vector3(0.4f, 8f, 1f));
-        CrearPared("ParedDerecha", cuadrado, gris, new Vector3(7, 0, 0), new Vector3(0.4f, 8f, 1f));
-
-        // Monedas
-        CrearMoneda("Moneda1", circulo, amarillo, new Vector3(-4, 2, 0));
-        CrearMoneda("Moneda2", circulo, amarillo, new Vector3(0, 2, 0));
-        CrearMoneda("Moneda3", circulo, amarillo, new Vector3(4, 2, 0));
-        CrearMoneda("Moneda4", circulo, amarillo, new Vector3(-3, -2, 0));
-        CrearMoneda("Moneda5", circulo, amarillo, new Vector3(3, -2, 0));
-
-        EditorSceneManager.SaveScene(escena, RutaEscena);
-        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(RutaEscena, true) };
-
-        if (SceneView.lastActiveSceneView != null)
-            SceneView.lastActiveSceneView.in2DMode = true;
-    }
-
-    static GameObject CrearSpriteObj(string nombre, Sprite sprite, Vector3 pos, Vector3 escala, Color color)
-    {
-        var go = new GameObject(nombre);
-        go.transform.position = pos;
-        go.transform.rotation = Quaternion.identity;
-        go.transform.localScale = escala;
-        var sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = sprite;
-        sr.color = color;
-        sr.sortingOrder = 0;
-        return go;
-    }
-
-    static void CrearPared(string nombre, Sprite sprite, Color color, Vector3 pos, Vector3 escala)
-    {
-        var go = CrearSpriteObj(nombre, sprite, pos, escala, color);
-        var bc = go.AddComponent<BoxCollider2D>();
-        bc.size = Vector2.one;
-        bc.isTrigger = false;      // pared sólida; sin Rigidbody2D
-    }
-
-    static void CrearMoneda(string nombre, Sprite sprite, Color color, Vector3 pos)
-    {
-        var go = CrearSpriteObj(nombre, sprite, pos, new Vector3(0.45f, 0.45f, 1f), color);
-        go.tag = "Moneda";
-        var cc = go.AddComponent<CircleCollider2D>();
-        cc.radius = 0.5f;
-        cc.isTrigger = true;       // trigger; sin Rigidbody2D
-    }
-
-    // ---------- Validación (ejecutable por línea de comandos) ----------
-    public static void Validar()
-    {
-        var escena = EditorSceneManager.OpenScene(RutaEscena, OpenSceneMode.Single);
-        int errores = 0;
-        void Chk(bool ok, string msg) { if (!ok) { errores++; Debug.LogError("[VALIDAR] FALLA: " + msg); } }
-
-        var cam = Camera.main;
-        Chk(cam != null && cam.orthographic && Mathf.Approximately(cam.orthographicSize, 5f), "Cámara ortográfica size 5");
-
-        var j = GameObject.Find("Jugador");
-        Chk(j != null, "Existe Jugador");
-        if (j != null)
-        {
-            var rb = j.GetComponent<Rigidbody2D>();
-            Chk(rb != null && rb.bodyType == RigidbodyType2D.Dynamic && rb.gravityScale == 0f && rb.linearDamping == 0f, "Rigidbody2D Dynamic, gravedad 0, damping 0");
-            Chk(rb != null && (rb.constraints & RigidbodyConstraints2D.FreezeRotation) != 0, "Freeze Rotation Z");
-            var bc = j.GetComponent<BoxCollider2D>();
-            Chk(bc != null && !bc.isTrigger, "BoxCollider2D no trigger");
-            Chk(j.GetComponent<CazadorMonedas>() != null, "Script en Jugador");
-        }
-
-        foreach (var n in new[] { "ParedSuperior", "ParedInferior", "ParedIzquierda", "ParedDerecha" })
-        {
-            var p = GameObject.Find(n);
-            Chk(p != null, n + " existe");
-            if (p != null)
-            {
-                var bc = p.GetComponent<BoxCollider2D>();
-                Chk(bc != null && !bc.isTrigger, n + " BoxCollider2D sólido");
-                Chk(p.GetComponent<Rigidbody2D>() == null, n + " sin Rigidbody2D");
-            }
-        }
-
-        var monedas = GameObject.FindGameObjectsWithTag("Moneda");
-        Chk(monedas.Length == 5, "Exactamente 5 monedas con tag Moneda (hay " + monedas.Length + ")");
-        foreach (var m in monedas)
-        {
-            var cc = m.GetComponent<CircleCollider2D>();
-            Chk(cc != null && cc.isTrigger, m.name + " CircleCollider2D trigger");
-            Chk(m.GetComponent<Rigidbody2D>() == null, m.name + " sin Rigidbody2D");
-        }
-
-        Debug.Log(errores == 0 ? "[VALIDAR] OK: la escena cumple la especificación." : "[VALIDAR] " + errores + " error(es).");
-        if (Application.isBatchMode) EditorApplication.Exit(errores == 0 ? 0 : 1);
-    }
-}
-#endif
-```
+`Validar()` abre ambas escenas y comprueba cámara, jugador, paredes, 5 monedas, HUD y paneles asignados,
+EventSystem en cada escena, objeto `Menu` con botones Jugar/Salir y el orden de Build Settings.
+Termina con `[VALIDAR] OK: la escena cumple la especificación.` (código de salida 0 en batch).
 
 ---
 
 ## 8. Ejecución
 
-**Desde el editor (recomendado):** abrir el proyecto → menú **Herramientas → Construir Cazador de Monedas**
-→ abrir `Assets/Escenas/Nivel1.unity` → **Play**.
+**Desde el editor:** menú **Herramientas → Construir Cazador de Monedas** → abrir
+`Assets/Escenas/Menu.unity` → **Play** → **Jugar** (clic dentro de Game para dar foco al teclado).
 
-**Desde línea de comandos** (con Unity cerrado y licencia activa; ajustar la ruta del editor):
+**Desde línea de comandos** (con Unity **cerrado** y licencia activa):
 
 ```bash
 # Construir
-"<ruta>/Unity" -batchmode -nographics -quit -projectPath "<ruta>/CazadorMonedas" \
-  -executeMethod ConstruirCazadorMonedas.Construir -logFile -
+"C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Unity.exe" -batchmode -nographics -quit \
+  -projectPath "<ruta>/CazadorMonedas" -executeMethod ConstruirCazadorMonedas.Construir -logFile <log>
 
-# Validar estructura de la escena
-"<ruta>/Unity" -batchmode -nographics -projectPath "<ruta>/CazadorMonedas" \
-  -executeMethod ConstruirCazadorMonedas.Validar -logFile -
+# Validar
+"C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Unity.exe" -batchmode -nographics \
+  -projectPath "<ruta>/CazadorMonedas" -executeMethod ConstruirCazadorMonedas.Validar -logFile <log>
 ```
 
-Rutas típicas: Windows `C:\Program Files\Unity\Hub\Editor\<versión>\Editor\Unity.exe`,
-macOS `/Applications/Unity/Hub/Editor/<versión>/Unity.app/Contents/MacOS/Unity`.
-Si el cambio de *Active Input Handling* pide reinicio, ejecutar el comando de construcción **dos veces**
-(la segunda ya con el ajuste cargado) y abrir el editor de nuevo.
+Los avisos `[Licensing::Client] Error: Code 404 ...` del log son inofensivos si termina con
+`Exiting batchmode successfully now!`.
 
 ---
 
 ## 9. Criterios de aceptación (checklist)
 
 Estructura y compilación
-- [ ] Existe `Assets/Escenas/Nivel1.unity`, `Assets/Scripts/CazadorMonedas.cs` y la escena está en Build Settings.
+- [ ] Existen `Menu.unity`, `Nivel1.unity` y los 3 scripts; Build Settings = Menu (0), Nivel1 (1).
 - [ ] La consola de Unity no tiene errores rojos.
 - [ ] `Validar` termina con `OK`.
 
-Comportamiento (probar con Play; hacer clic dentro de Game para dar foco al teclado)
+Comportamiento (empezar Play desde `Menu`)
 
 | Prueba | Resultado esperado |
 |---|---|
+| Menú | Título y botones Jugar / Salir; Jugar carga Nivel1; Salir detiene Play (o cierra el juego). |
 | Movimiento | Responde a flechas **y** WASD; no cae ni gira; diagonal no es más rápida. |
 | Paredes | No atraviesa ninguna de las 4 paredes. |
 | Monedas | Cada moneda desaparece y suma **una sola vez**. |
-| Victoria | Contador `5 / 5`, mensaje de victoria y el jugador queda detenido. |
-| Nueva partida | Detener Play y volver a iniciar: reaparecen las 5 monedas. |
+| Pausa | Esc congela el juego y muestra el panel; Continuar o Esc reanudan; Reiniciar empieza desde 0; Menú principal vuelve al menú. |
+| Victoria | Contador `5 / 5`, mensaje de victoria, jugador detenido, panel de fin; Esc ya no pausa. |
+| Fin | Reiniciar reaparece las 5 monedas con contador 0; Menú principal vuelve al menú. |
 | HUD | Texto blanco, tamaño 24, arriba a la izquierda, legible sobre el fondo oscuro. |
 
 ---
@@ -516,13 +433,15 @@ Comportamiento (probar con Play; hacer clic dentro de Game para dar foco al tecl
 
 | Problema | Qué revisar |
 |---|---|
-| No se mueve | Foco en Game, script en `Jugador`, Velocidad > 0, sin errores rojos. |
-| Error de Input (`InvalidOperationException`) | Active Input Handling = Both o Old; reiniciar editor. |
+| No se mueve | Foco en Game, script en `Jugador`, Velocidad > 0, sin errores rojos, juego no pausado. |
+| Error de Input (`InvalidOperationException`) | Active Input Handling = Both; reiniciar editor. |
+| Los botones no responden | Debe haber un `EventSystem` en la escena; Canvas con `GraphicRaycaster`. |
+| Todo queda congelado al cambiar de escena | Alguna ruta no restableció `Time.timeScale = 1`. |
+| "Jugar" no carga Nivel1 | Nivel1 debe estar en Build Settings con el nombre exacto `Nivel1`. |
 | Cae o gira | Gravity Scale = 0 y Freeze Rotation Z. |
 | Atraviesa paredes | Box Collider 2D en jugador y paredes, Is Trigger apagado, jugador Dynamic y Simulated. |
 | Monedas no suman | Tag = `Moneda`, Circle Collider 2D con Is Trigger, Rigidbody 2D en Jugador. |
 | `linearVelocity` no existe | No es Unity 6, o se usa `Rigidbody` 3D. |
-| `NullReferenceException` | Rigidbody2D y script deben estar en el mismo objeto `Jugador`. |
 | No aparece la victoria | Debe haber exactamente 5 monedas etiquetadas y Meta = 5. |
 | Sprites rosas/ausentes (URP) | Usar el material de sprite por defecto del pipeline; no cambiar shaders manualmente. |
 
@@ -532,22 +451,17 @@ Comportamiento (probar con Play; hacer clic dentro de Game para dar foco al tecl
 
 1. Cambiar colores/posiciones manteniendo las monedas dentro del escenario.
 2. Añadir 3 monedas más en lugares accesibles y poner **Meta = 8** en el Inspector de `Jugador`.
-3. Crear un obstáculo: Square gris + Box Collider 2D con Is Trigger **desactivado** y **sin** Rigidbody 2D; debe poder rodearse.
-
-Preguntas de comprensión que puede responder:
-- *Pared vs moneda*: la pared es collider sólido (bloquea); la moneda es trigger (detecta sin bloquear).
-- *Si Meta > nº de monedas*: nunca se gana (el contador no llega a la meta).
-- *¿Por qué el script va en Jugador?*: porque ahí está el Rigidbody2D que se mueve y que detecta los triggers.
-- *¿Qué campo cambia la velocidad?*: `Velocidad` en el componente Cazador Monedas del Inspector.
+3. Crear un obstáculo: Square gris + Box Collider 2D con Is Trigger **desactivado** y **sin** Rigidbody 2D.
+4. Mostrar el tiempo que se tardó en recoger las monedas en el panel de fin.
+5. Añadir instrucciones (controles, objetivo, tecla Esc) en el menú.
 
 ---
 
 ## 12. Fuera de alcance (no hacer)
 
-- Sonido, partículas, animaciones, menús, botón de reinicio, Canvas/TextMeshPro, Input System nuevo.
+- Sonido, partículas, animaciones, TextMeshPro, Input System nuevo para el movimiento.
 - Compilar/exportar el juego (Build Profiles) salvo petición explícita.
-- Modificar valores de las tablas de la sección 5 o renombrar objetos, carpetas, tag o clase.
+- Modificar valores de las tablas de la sección 5 o renombrar objetos, carpetas, tag o clases.
 - Subir a control de versiones `Library/`, `Temp/`, `Logs/`, `obj/` (usar el `.gitignore` estándar de Unity).
 
-Para conservar el proyecto se entrega **la carpeta completa del proyecto** (escena y script por separado
-no incluyen todos los ajustes), pudiendo excluir `Library` y `Temp`.
+Para conservar el proyecto se entrega **la carpeta completa del proyecto**, pudiendo excluir `Library` y `Temp`.

@@ -1,9 +1,13 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CazadorMonedas : MonoBehaviour
 {
     public float velocidad = 4f;
     public int meta = 5;
+    public Text textoContador;
+    public Text textoVictoria;
+    public ControlPartida partida;
     private Rigidbody2D cuerpo;
     private Vector2 direccion;
     private int puntos = 0;
@@ -12,6 +16,9 @@ public class CazadorMonedas : MonoBehaviour
     void Start()
     {
         cuerpo = GetComponent<Rigidbody2D>();
+        if (textoVictoria != null)
+            textoVictoria.gameObject.SetActive(false);
+        ActualizarContador();
     }
 
     void Update()
@@ -36,22 +43,21 @@ public class CazadorMonedas : MonoBehaviour
         otro.enabled = false;
         Destroy(otro.gameObject);
         puntos++;
+        ActualizarContador();
         if (puntos >= meta)
         {
             gano = true;
             cuerpo.linearVelocity = Vector2.zero;
+            if (textoVictoria != null)
+                textoVictoria.gameObject.SetActive(true);
+            if (partida != null)
+                partida.MostrarFin();
         }
     }
 
-    void OnGUI()
+    void ActualizarContador()
     {
-        GUIStyle estilo = new GUIStyle(GUI.skin.label);
-        estilo.fontSize = 24;
-        estilo.normal.textColor = Color.white;
-        GUI.Label(new Rect(20, 20, 420, 40),
-            "Monedas: " + puntos + " / " + meta, estilo);
-        if (gano)
-            GUI.Label(new Rect(20, 65, 500, 40),
-                "¡Ganaste! Recogiste todas las monedas.", estilo);
+        if (textoContador != null)
+            textoContador.text = "Monedas: " + puntos + " / " + meta;
     }
 }
